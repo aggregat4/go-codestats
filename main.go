@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/boyter/scc/v3/processor"
 )
@@ -39,20 +40,30 @@ func (p *statsProcessor) ProcessLine(job *processor.FileJob, currentLine int64, 
 // }
 
 func main() {
-	root := "/home/terzic/dev/cad/master/cadenza/"
+	root := os.Getenv("CODESTATS_ROOT")
+	fmt.Println("Starting directory walk of ", root)
 	stack := []string{root}
 	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
+			if strings.HasPrefix(d.Name(), ".") {
+				return filepath.SkipDir
+			}
 			stack = append(stack, path)
 		}
 		parentPath := ""
 		if len(stack) > 1 {
 			parentPath = stack[len(stack)-2]
 		}
-		fmt.Println(path, parentPath)
+		if d.IsDir() {
+			fmt.Println(path, parentPath)
+		} else {
+			if !strings.HasPrefix(d.Name(), ".") {
+				fmt.Println(path, parentPath)
+			}
+		}
 		if d.IsDir() {
 			defer func() { stack = stack[:len(stack)-1] }()
 		}
